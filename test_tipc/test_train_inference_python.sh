@@ -337,7 +337,7 @@ else
                     cmd="${python} -m paddle.distributed.launch --ips=${ips} --gpus=${gpu} ${run_train} ${set_use_gpu} ${set_save_model} ${set_pretrain} ${set_epoch} ${set_autocast} ${set_batchsize} ${set_train_params1} ${set_amp_config}"
                 fi
                 # run train
-#                eval $cmd
+                eval $cmd
                 status_check $? "${cmd}" "${status_log}"
 
                 set_eval_pretrain=$(func_set_params "${pretrain_model_key}" "${save_log}/${train_model_name}")
@@ -357,7 +357,7 @@ else
                     set_export_weight=$(func_set_params "${export_weight}" "${save_log}/${train_model_name}")
                     set_save_infer_key=$(func_set_params "${save_infer_key}" "${save_infer_path}")
                     export_cmd="${python} ${run_export} ${set_export_weight} ${set_save_infer_key}"
-#                    eval $export_cmd
+                    eval $export_cmd
                     status_check $? "${export_cmd}" "${status_log}"
 
                     #run inference
@@ -368,8 +368,7 @@ else
                     else
                         infer_model_dir=${save_infer_path}
                     fi
-                    infer_cmd="${python} ${inference_py} ${infer_model_dir}"
-                    echo ${infer_cmd}
+                    infer_cmd="${python} ${inference_py} --model_dir ${infer_model_dir}"
                     eval ${infer_cmd}
                     status_check $? "${infer_cmd}" "${status_log}"
 #                    func_inference "${python}" "${inference_py}" "${infer_model_dir}" "${LOG_PATH}" "${train_infer_img_dir}" "${flag_quant}"

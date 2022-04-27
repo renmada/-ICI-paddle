@@ -19,7 +19,7 @@
 
 ## 1. 简介
 
-​	   针对数据稀缺的小样本学习问题，本文提出了一种统计的方法，称为实例可信度推理（ICI），利用无标签样本的支持做few-shot的视觉识别。
+​	   实例可信度推断模型聚焦如何将未标记样本更好加入到分类器的训练当中。其整体的模型见图，首先支持集中有标签标记样本集和未标记补充样本集经过一个预训练好的特征提取网络，得到各自对应的特征映射。其中含标签的样本将直接参与线性分类器的训练以得到一个初步的分类器模型，然后使用该分类器模型对未标记样本进行标签预测，得到对应的假标签 (pseudo label)。这些含假标签的样本集将通过实例可信度推断模块进行筛选，得到置信度高的假标签样本数据，并将这些数据添加到线性分类器模型的训练数据中再次训练分类器。以此不断往复训练、推断、添加，最终训练出一个拟合能力和泛化能力更强的线性分类器。最后，便可利用该训练好的分类器对询问集数据进行标签预测，完成小样本分类任务
 
 
 ![ICI](./images/img.png)
@@ -90,9 +90,9 @@ Accuracy: 69.56%, std: :0.50%
 ### 4.2 模型评估
 评估训练好的模型
 ```bash
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode test --resume ckpt/miniImageNet/5-shot/best_model.tar&
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode test --resume ckpt/miniImageNet/5-shot/best_model.tar
 
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 1 --phase test --mode test --resume ckpt/miniImageNet/1-shot/best_model.tar &
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 1 --phase test --mode test --resume ckpt/miniImageNet/1-shot/best_model.tar
 ```
 评估结果
 ```

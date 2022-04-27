@@ -13,7 +13,7 @@ train_infer_img_dir:./data/sample_data
 null:null
 ##
 trainer:norm_train
-norm_train:main_tipc.py --dataset miniImageNet  -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --dataset_dir ./data/sample_data
+norm_train:main.py --dataset miniImageNet  -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --dataset_dir ./data/sample_data
 pact_train:null
 fpgm_train:null
 distill_train:null
@@ -37,7 +37,7 @@ inference_dir:null
 infer_model:./test_tipc/icir/infer_model
 infer_export:null
 infer_quant:False
-inference:infer.py --dataset_dir ./data/sample_data --benchmark True --model_dir
+inference:infer.py --dataset_dir ./data/sample_data --benchmark True
 --device:gpu
 --enable_mkldnn:True|False
 --cpu_threads:1|6
