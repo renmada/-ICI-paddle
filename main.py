@@ -32,6 +32,8 @@ def main(args):
     model = Model(scale_cls=args.scale_cls, num_classes=args.num_classes)
     if args.resume is not None:
         state_dict = paddle.load(args.resume)
+        if 'state_dict' in state_dict:
+            state_dict = state_dict['state_dict']
         model.set_state_dict(state_dict)
         print('Load model from {}'.format(args.resume))
     if args.mode == 'predict':
