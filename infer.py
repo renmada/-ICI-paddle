@@ -13,32 +13,10 @@
 # limitations under the License.
 import os
 from paddle import inference
-import numpy as np
-import sys
 import os
-import paddle
-import paddle.nn.functional as F
 import numpy as np
-import argparse
-from paddle.io import DataLoader
-from sklearn.metrics import f1_score, accuracy_score
-import datetime
-import math
-import os
-import os.path as osp
-import sys
-import time
-import paddle.nn.functional as F
-
-import numpy as np
-import paddle
-from tqdm import tqdm
-
 from config import config
-from data.data_manager import DataManager
-from models.ici import ICI
-
-from utils.ci import mean_confidence_interval
+from predict_helper import load_and_process
 
 
 
@@ -109,9 +87,8 @@ class InferenceEngine(object):
             data: data.
         Returns: Input data after preprocess.
         """
-        dm = DataManager(args)
-        trainloader, testloader = dm.return_dataloaders()
-        return testloader
+        x = load_and_process(args)
+        return x.unsqueeze(0)
 
     def postprocess(self, output):
         """postprocess
@@ -145,14 +122,6 @@ def infer_main(args):
         prob: : Probability of the input.
     """
     inference_engine = InferenceEngine(args)
-    ici = ICI(classifier=args.classifier, num_class=args.nKnovel,
-              step=args.step, strategy=args.strategy, reduce=args.embed,
-              d=args.dim, logit_penalty=args.logit_penalty)
-    if args.unlabel != 0:
-        iterations = math.ceil(args.unlabel / args.step) + 2
-    else:
-        iterations = math.ceil(15 / args.step) + 2
-    acc_list = [[] for _ in range(iterations)]
 
     # init benchmark
     if args.benchmark:
@@ -168,47 +137,17 @@ def infer_main(args):
         autolog.times.start()
 
     # dataset preprocess
-    test_loader = inference_engine.preprocess(args)
+    x = inference_engine.preprocess(args)
     if args.benchmark:
         autolog.times.stamp()
 
-    for images_train, labels_train, images_test, labels_test, images_unlabel in tqdm(test_loader, ncols=0):
-        assert images_train.shape[0] == 1
-
-        num_train = images_train.shape[1]
-        num_test = images_test.shape[1]
-        if args.unlabel != 0:
-            images = paddle.concat([images_train, images_test, images_unlabel], 1).squeeze(0)
-        else:
-            images = paddle.concat([images_train, images_test], 1).squeeze(0)
-        embeddings = inference_engine.run(images.cpu().numpy())
-        train_embeddings = embeddings[:num_train]
-        labels_train = labels_train.squeeze(0).numpy().reshape(-1)
-        test_embeddings = embeddings[num_train:num_train + num_test]
-        labels_test = labels_test.squeeze(0).numpy().reshape(-1)
-        if args.unlabel != 0:
-            unlabel_embeddings = embeddings[num_train + num_test:]
-        else:
-            unlabel_embeddings = None
-        ici.fit(train_embeddings, labels_train)
-        acc = ici.predict(test_embeddings, unlabel_embeddings, True, labels_test)
-        for i in range(min(iterations - 1, len(acc))):
-            acc_list[i].append(acc[i])
-        acc_list[-1].append(acc[-1])
-
+    logtis = inference_engine.run(x.cpu().numpy())
     if args.benchmark:
         autolog.times.stamp()
 
     # postprocess
-    mean_acc_list = []
-    ci_list = []
-    for i, item in enumerate(acc_list):
-        mean_acc, ci = mean_confidence_interval(item)
-        mean_acc_list.append(mean_acc)
-        ci_list.append(ci)
-    print("{}".format(
-        ' '.join([str(i * 100)[:5] for i in mean_acc_list])))
-    print("{}".format(' '.join([str(i * 100)[:5] for i in ci_list])))
+    label = logtis.argmax(-1)
+    print('The predicted label is: {}'.format(label))
 
     if args.benchmark:
         autolog.times.stamp()

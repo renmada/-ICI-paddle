@@ -74,6 +74,11 @@ class Model(nn.Layer):
         ytest = self.clasifier(ftest)
         return ytest, cls_scores
 
+    def predict(self, x):
+        f = self.base(x)
+        f = self.clasifier(f)
+        return f.mean([2, 3])
+
 
 class InferModel(nn.Layer):
     def __init__(self, scale_cls, iter_num_prob=35.0 / 75, num_classes=64):
@@ -82,10 +87,9 @@ class InferModel(nn.Layer):
         self.iter_num_prob = iter_num_prob
         self.base = resnet12()
         self.nFeat = self.base.nFeat
+        self.clasifier = nn.Conv2D(self.nFeat, num_classes, kernel_size=1)
 
     def forward(self, x):
         f = self.base(x)
-        f = f.mean(2).mean(2)
-        f = F.normalize(f, p=2, axis=f.dim() - 1, epsilon=1e-12)
-        return f
-
+        f = self.clasifier(f)
+        return f.mean([2, 3])

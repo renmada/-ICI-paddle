@@ -86,9 +86,10 @@ def config():
     parser.add_argument('--dataset_dir', default='data/MiniImagenet/', type=str)
     parser.add_argument('--output_path', type=str)
     parser.add_argument('--model_dir', type=str)
-    parser.add_argument('--benchmark', type=bool, default=True)
+    parser.add_argument('--benchmark', type=bool, default=False)
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--mode', type=str, default='train')
+    parser.add_argument('--pic_path', type=str, default='./images/cat.jpg')
 
     args = parser.parse_args()
 

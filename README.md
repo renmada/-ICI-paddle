@@ -82,7 +82,6 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 -
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train
 ```
 ```
-100%|██████████| 300/300 [02:36<00:00,  1.91it/s]Epoch81 lr: 0.00024 Time:157.2s Data:1.2s Loss:1.4973 
 Accuracy: 69.56%, std: :0.50%
 ==> Test 5-way Best accuracy 69.56%, achieved at epoch 81
 ```
@@ -104,11 +103,23 @@ Load model from ckpt/miniImageNet/5-shot/best_model.tar
 ```
 
 ### 4.3 模型预测
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar &
+```bash
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
+
+```
 
 ## 5. 模型推理部署
+###  模型导出
+```bash
+python3 export_model.py \
+--resume ckpt/miniImageNet/1-shot/best_model.tar \
+--output_path ckpt/miniImageNet/1-shot/
 
-
+```
+### 静态图推理
+```bash
+python3 infer.py --model_dir ckpt/miniImageNet/1-shot/
+```
 ## 6. 自动化测试脚本
 
 ```shell

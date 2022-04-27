@@ -37,7 +37,7 @@ inference_dir:null
 infer_model:./test_tipc/icir/infer_model
 infer_export:null
 infer_quant:False
-inference:infer.py --dataset_dir ./data/sample_data --benchmark True
+inference:infer.py --dataset_dir ./data/sample_data --benchmark True --model_dir
 --device:gpu
 --enable_mkldnn:True|False
 --cpu_threads:1|6

@@ -29,95 +29,82 @@ def main(args):
 
     sys.stdout = Logger(osp.join(args.save_dir, 'log_train.txt'))
     print("==========\nArgs:{}\n==========".format(args))
+    model = Model(scale_cls=args.scale_cls, num_classes=args.num_classes)
+    if args.resume is not None:
+        state_dict = paddle.load(args.resume)
+        model.set_state_dict(state_dict)
+        print('Load model from {}'.format(args.resume))
+    if args.mode == 'predict':
+        predict(model, args)
+        return
 
     print('Initializing image data manager')
     dm = DataManager(args)
     trainloader, testloader = dm.return_dataloaders()
 
-    model = Model(scale_cls=args.scale_cls, num_classes=args.num_classes)
     criterion = CrossEntropyLoss()
     lr_schedule = PiecewiseDecay([60, 70, 80, 90], [0.1, 0.006, 0.0012, 0.00024])
     optimizer = init_optimizer(args.optim, model.parameters(), lr_schedule, args.weight_decay)
 
-    if args.resume is not None:
-        state_dict = paddle.load(args.resume)['state_dict']
-        model.set_state_dict(state_dict)
-        print('Load model from {}'.format(args.resume))
-
     if args.mode == 'test':
         test(model, testloader, args)
         return
-    if args.mode == 'predict':
-        return predict(model, testloader, args)
 
-    start_time = time.time()
-    train_time = 0
     best_acc = -np.inf
     best_epoch = 0
     print("==> Start training")
 
+    global_step = 0
+    train_reader_cost = 0.0
+    train_run_cost = 0.0
+    total_samples = 0
+    reader_start = time.time()
+    last_step = args.max_epoch * len(trainloader)
     for epoch in range(args.start_epoch, args.max_epoch):
+        model.train()
+        for images_train, labels_train, images_test, labels_test, pids in trainloader:
+            labels_train_1hot = one_hot(labels_train)
+            labels_test_1hot = one_hot(labels_test)
+            train_reader_cost += time.time() - reader_start
+            global_step += 1
+            train_start = time.time()
+            ytest, cls_scores = model(images_train, images_test, labels_train_1hot, labels_test_1hot)
+            loss1 = criterion(ytest, pids.reshape([-1]))
+            loss2 = criterion(cls_scores, labels_test.reshape([-1]))
+            loss = loss1 + 0.5 * loss2
+            train_run_cost += time.time() - train_start
+            total_samples += len(images_train)
+            if global_step % 10 == 0:
+                print(
+                    "global step %d / %d, loss: %f, avg_reader_cost: %.5f sec, avg_batch_cost: %.5f sec, avg_samples: %.5f, ips: %.5f img/sec"
+                    % (global_step, last_step, loss.item(), train_reader_cost /
+                       10, (train_reader_cost + train_run_cost)
+                       / 10, total_samples / 10,
+                       total_samples / (train_reader_cost + train_run_cost)))
+                train_reader_cost = 0.0
+                train_run_cost = 0.0
+                total_samples = 0
+                reader_start = time.time()
+            loss.backward()
+            optimizer.step()
+            optimizer.clear_grad()
 
-        start_train_time = time.time()
-        train(epoch, model, criterion, optimizer, trainloader, lr_schedule)
-        train_time += round(time.time() - start_train_time)
+        acc = val(model, testloader)
+        is_best = acc > best_acc
+        lr_schedule.step()
+        if is_best:
+            best_acc = acc
+            best_epoch = epoch + 1
 
-        if epoch == 0 or epoch > (args.stepsize[0] - 1) or (epoch + 1) % 10 == 0:
-            acc = val(model, testloader)
-            is_best = acc > best_acc
+        state_dict = model.state_dict()
+        # print(state_dict.keys())
+        # state_dict.pop('clasifier.weight')
+        # state_dict.pop('clasifier.bias')
+        save_checkpoint(state_dict, is_best, osp.join(args.save_dir, 'checkpoint_ep' + str(epoch + 1) + '.tar'))
 
-            if is_best:
-                best_acc = acc
-                best_epoch = epoch + 1
-            if isinstance(model, paddle.DataParallel):
-                state_dict = model._layers.state_dict()
-            else:
-                state_dict = model.state_dict()
-            save_checkpoint({
-                'state_dict': state_dict,
-                'acc': acc,
-                'epoch': epoch,
-            }, is_best, osp.join(args.save_dir, 'checkpoint_ep' + str(epoch + 1) + '.tar'))
+        print("==> Test 5-way Best accuracy {:.2%}, achieved at epoch {}".format(best_acc, best_epoch))
 
-            print("==> Test 5-way Best accuracy {:.2%}, achieved at epoch {}".format(best_acc, best_epoch))
-
-    elapsed = round(time.time() - start_time)
-    elapsed = str(datetime.timedelta(seconds=elapsed))
-    train_time = str(datetime.timedelta(seconds=train_time))
-    print("Finished. Total elapsed time (h:m:s): {}. Training time (h:m:s): {}.".format(elapsed, train_time))
     print("==========\nArgs:{}\n==========".format(args))
-
-
-def train(epoch, model, criterion, optimizer, trainloader, lr_schedule):
-    losses = AverageMeter()
-    batch_time = AverageMeter()
-    data_time = AverageMeter()
-
-    model.train()
-
-    end = time.time()
-    for images_train, labels_train, images_test, labels_test, pids in tqdm(trainloader):
-        data_time.update(time.time() - end)
-        labels_train_1hot = one_hot(labels_train)
-        labels_test_1hot = one_hot(labels_test)
-        ytest, cls_scores = model(images_train, images_test, labels_train_1hot, labels_test_1hot)
-        loss1 = criterion(ytest, pids.reshape([-1]))
-        loss2 = criterion(cls_scores, labels_test.reshape([-1]))
-        loss = loss1 + 0.5 * loss2
-        loss.backward()
-        optimizer.step()
-        optimizer.clear_grad()
-        losses.update(loss.item(), pids.shape[0])
-        batch_time.update(time.time() - end)
-        end = time.time()
-    lr_schedule.step()
-    print('Epoch{0} '
-          'lr: {1} '
-          'Time:{batch_time.sum:.1f}s '
-          'Data:{data_time.sum:.1f}s '
-          'Loss:{loss.avg:.4f} '.format(
-        epoch + 1, lr_schedule.get_lr(), batch_time=batch_time,
-        data_time=data_time, loss=losses))
 
 
 def val(model, testloader):
@@ -210,46 +197,17 @@ def test(model, testloader, args):
     return
 
 
-def predict(model, testloader, args):
-    import warnings
-    warnings.filterwarnings('ignore')
-    ici = ICI(classifier=args.classifier, num_class=args.nKnovel,
-              step=args.step, strategy=args.strategy, reduce=args.embed,
-              d=args.dim, logit_penalty=args.logit_penalty)
-
-    preds = []
+def predict(model, args):
+    from predict_helper import load_and_process
+    x = load_and_process(args)
     model.eval()
     with paddle.no_grad():
-        for images_train, labels_train, images_test, labels_test, images_unlabel in tqdm(testloader, ncols=0):
+        logits = model.predict(x.unsqueeze(0))
+        label = logits.argmax(-1).item()
 
-            assert images_train.shape[0] == 1
-
-            num_train = images_train.shape[1]
-            num_test = images_test.shape[1]
-            if args.unlabel != 0:
-                images = paddle.concat([images_train, images_test, images_unlabel], 1).squeeze(0)
-            else:
-                images = paddle.concat([images_train, images_test], 1).squeeze(0)
-            embeddings = model.get_embeddings(images).detach().cpu().numpy()
-            train_embeddings = embeddings[:num_train]
-            labels_train = labels_train.squeeze(0).numpy().reshape(-1)
-            test_embeddings = embeddings[num_train:num_train + num_test]
-            labels_test = labels_test.squeeze(0).numpy().reshape(-1)
-            if args.unlabel != 0:
-                unlabel_embeddings = embeddings[num_train + num_test:]
-            else:
-                unlabel_embeddings = None
-
-            ici.fit(train_embeddings, labels_train)
-            predict = ici.predict(test_embeddings, unlabel_embeddings, False, labels_test)
-            preds.extend(predict)
-
-    return preds
+    print('The predicted label is: {}'.format(label))
 
 
 if __name__ == '__main__':
     args = config()
-    ret = main(args)
-    if args.mode == 'predict':
-        print('Part of predict results')
-        print(ret[:20])
+    main(args)
