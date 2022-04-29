@@ -146,9 +146,10 @@ def infer_main(args):
         autolog.times.stamp()
 
     # postprocess
-    label = logtis.argmax(-1)
+    label = logtis.argmax(-1)[0]
+    prob = logtis.max(-1)[0]
     print('=========================================')
-    print('The predicted label is: {}'.format(label))
+    print('The predicted label is: {}, max_prob: {:.4f}'.format(label, prob))
     print('=========================================')
 
     if args.benchmark:

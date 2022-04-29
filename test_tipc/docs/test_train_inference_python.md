@@ -30,7 +30,7 @@ Linux端基础训练推理功能测试的主程序为`test_train_inference_pytho
 - 安装paddlepaddle-gpu==0.0.0.post102
 - 安装AutoLog（规范化日志输出工具）
     ```
-    pip install git+https://hub.fastgit.org/LDOUBLEV/AutoLog
+    pip install git+https://github.com/LDOUBLEV/AutoLog
     ```
 
 ### 2.3 功能测试

@@ -92,4 +92,5 @@ class InferModel(nn.Layer):
     def forward(self, x):
         f = self.base(x)
         f = self.clasifier(f)
-        return f.mean([2, 3])
+        f = f.mean([2, 3])
+        return F.softmax(f, axis=1)

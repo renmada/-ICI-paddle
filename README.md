@@ -60,6 +60,8 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 ```bash
 python -m pip install paddlepaddle-gpu==0.0.0.post102 -f https://www.paddlepaddle.org.cn/whl/linux/gpu/develop.html
 pip install glmnet-py
+## 安装AutoLog（规范化日志输出工具）
+pip install git+https://github.com/LDOUBLEV/AutoLog
 ```
 
 ### 3.2 准备数据
@@ -103,10 +105,13 @@ Load model from ckpt/miniImageNet/5-shot/best_model.tar
 ```
 
 ### 4.3 模型预测
+单张图片预测
+![](./images/cat.jpg)
 ```bash
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
-
+# The predicted label is: 47, max_prob: 0.3150
 ```
+
 
 ## 5. 模型推理部署
 ###  模型导出
@@ -114,18 +119,23 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --n
 python3 export_model.py \
 --resume ckpt/miniImageNet/1-shot/best_model.tar \
 --output_path ckpt/miniImageNet/1-shot/
-
 ```
 ### 静态图推理
+单张图片推理，输入同动态图
 ```bash
 python3 infer.py --model_dir ckpt/miniImageNet/1-shot/
+# The predicted label is: 47, max_prob: 0.3150
 ```
+
+
 ## 6. 自动化测试脚本
 
 ```shell
 bash test_tipc/test_train_inference_python.sh test_tipc/configs/train_infer_python.txt  lite_train_lite_infer
 ```
-
+关键步骤展示
+![](./images/tipc1.png)
+![](./images/tipc2.png)
 ## 7. LICENSE
 
 本项目的发布受[Apache 2.0 license](./LICENSE)许可认证。

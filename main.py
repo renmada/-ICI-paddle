@@ -13,7 +13,7 @@ from tqdm import tqdm
 from config import config
 from data.data_manager import DataManager
 from models.ici import ICI
-from models.net import Model
+from models.net import Model, InferModel
 from utils.avgmeter import AverageMeter
 from utils.ci import mean_confidence_interval
 from utils.iotools import save_checkpoint
@@ -29,7 +29,10 @@ def main(args):
 
     sys.stdout = Logger(osp.join(args.save_dir, 'log_train.txt'))
     print("==========\nArgs:{}\n==========".format(args))
-    model = Model(scale_cls=args.scale_cls, num_classes=args.num_classes)
+    if args.mode == 'predict':
+        model = InferModel(scale_cls=args.scale_cls, num_classes=args.num_classes)
+    else:
+        model = Model(scale_cls=args.scale_cls, num_classes=args.num_classes)
     if args.resume is not None:
         state_dict = paddle.load(args.resume)
         if 'state_dict' in state_dict:
@@ -204,10 +207,10 @@ def predict(model, args):
     x = load_and_process(args)
     model.eval()
     with paddle.no_grad():
-        logits = model.predict(x.unsqueeze(0))
+        logits = model(x.unsqueeze(0))
         label = logits.argmax(-1).item()
-
-    print('The predicted label is: {}'.format(label))
+        max_prob = logits.max(-1)[0].item()
+    print('The predicted label is: {}, max_prob: {:.4f}'.format(label, max_prob))
 
 
 if __name__ == '__main__':
