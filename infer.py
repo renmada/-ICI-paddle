@@ -141,15 +141,13 @@ def infer_main(args):
     if args.benchmark:
         autolog.times.stamp()
 
-    logtis = inference_engine.run(x.cpu().numpy())
+    logits = inference_engine.run(x.cpu().numpy())
     if args.benchmark:
         autolog.times.stamp()
 
     # postprocess
-    label = logtis.argmax(-1)[0]
-    prob = logtis.max(-1)[0]
     print('=========================================')
-    print('The predicted label is: {}, max_prob: {:.4f}'.format(label, prob))
+    print('img embedding extracted, shape is {}'.format(logits.shape))
     print('=========================================')
 
     if args.benchmark:

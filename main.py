@@ -207,10 +207,9 @@ def predict(model, args):
     x = load_and_process(args)
     model.eval()
     with paddle.no_grad():
-        logits = model(x.unsqueeze(0))
-        label = logits.argmax(-1).item()
-        max_prob = logits.max(-1)[0].item()
-    print('The predicted label is: {}, max_prob: {:.4f}'.format(label, max_prob))
+        logits = model(x.unsqueeze(0)).cpu().numpy()
+    print('img embedding extracted, shape is {}'.format(logits.shape))
+    return logits
 
 
 if __name__ == '__main__':

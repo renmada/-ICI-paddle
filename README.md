@@ -34,7 +34,7 @@
 
 
 ## 2. 数据集和复现精度
-**数据集:** [下载](https://pan.baidu.com/s/19vCAroRGoiO9OuOLRhGeNg?pwd=w491)
+**数据集:** [下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr)
 
 miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图片，其中每类有600个样本，每张图片的规格为84 × 84 。通常而言,这个数据集的训练集和测试集的类别划分为：80 : 20。
 **复现精度:**
@@ -44,7 +44,7 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 | 论文      | 72.25% | 83.25% |
 | 复现      | 72.44% | 83.38% |
 
-权重和日志[下载](https://pan.baidu.com/s/19vCAroRGoiO9OuOLRhGeNg?pwd=w491) ，解压到模型目录下
+权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
 ## 3. 准备数据与环境
 
 
@@ -105,11 +105,11 @@ Load model from ckpt/miniImageNet/5-shot/best_model.tar
 ```
 
 ### 4.3 模型预测
-单张图片预测
+提取单张图片向量
 ![](./images/cat.jpg)
 ```bash
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
-# The predicted label is: 47, max_prob: 0.3150
+# img embedding extracted, shape is (1, 64)
 ```
 
 
@@ -121,7 +121,7 @@ python3 export_model.py \
 --output_path ckpt/miniImageNet/1-shot/
 ```
 ### 静态图推理
-单张图片推理，输入同动态图
+提取单张图片向量，输入同动态图
 ```bash
 python3 infer.py --model_dir ckpt/miniImageNet/1-shot/
 # The predicted label is: 47, max_prob: 0.3150

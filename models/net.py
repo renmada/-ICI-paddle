@@ -93,4 +93,4 @@ class InferModel(nn.Layer):
         f = self.base(x)
         f = self.clasifier(f)
         f = f.mean([2, 3])
-        return F.softmax(f, axis=1)
+        return f
