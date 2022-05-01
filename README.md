@@ -106,7 +106,7 @@ Load model from ckpt/miniImageNet/5-shot/best_model.tar
 
 ### 4.3 模型预测
 提取单张图片向量
-![](./images/cat.jpg)
+<img src="./images/cat.jpg" width="30%" height="30%" />
 ```bash
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
 # img embedding extracted, shape is (1, 64)
