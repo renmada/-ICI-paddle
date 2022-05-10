@@ -40,13 +40,6 @@ class DropBlock(nn.Layer):
         non_zero_idxs = mask.nonzero()
         nr_blocks = non_zero_idxs.shape[0]
 
-        # offsets = paddle.stack(
-        #     [
-        #         paddle.arange(self.block_size).reshape([-1, 1]).expand([self.block_size, self.block_size]).reshape([-1]),
-        #         paddle.arange(self.block_size).tile([self.block_size]),
-        #     ]
-        # ).t()
-        # offsets = paddle.concat((paddle.zeros([self.block_size ** 2, 2]).astype('int64'), offsets.astype('int64')), 1)
         if nr_blocks > 0:
             non_zero_idxs = non_zero_idxs.tile([self.block_size ** 2, 1])
             offsets = self.offsets.tile([nr_blocks, 1]).reshape([-1, 4])
@@ -131,13 +124,13 @@ class ResNet(nn.Layer):
 
     def __init__(self, block, drop_block=False, drop_rate=0.1, dropblock_size=5):
         self.inplanes = 3
-        self.nFeat = 512
+        self.nFeat = 300
         super(ResNet, self).__init__()
         self.layer1 = self._make_layer(block, 64, stride=2, drop_rate=drop_rate)
-        self.layer2 = self._make_layer(block, 128, stride=2, drop_rate=drop_rate)
-        self.layer3 = self._make_layer(block, 256, stride=2, drop_rate=drop_rate, drop_block=drop_block,
+        self.layer2 = self._make_layer(block, 64, stride=2, drop_rate=drop_rate)
+        self.layer3 = self._make_layer(block, 128, stride=2, drop_rate=drop_rate, drop_block=drop_block,
                                        block_size=dropblock_size)
-        self.layer4 = self._make_layer(block, 512, stride=2, drop_rate=drop_rate, drop_block=drop_block,
+        self.layer4 = self._make_layer(block, 300, stride=2, drop_rate=drop_rate, drop_block=drop_block,
                                        block_size=dropblock_size, pool=True)
 
 

@@ -1,4 +1,4 @@
-# How to Trust Unlabeled Data? Instance Credibility Inference for Few-Shot Learning
+# 【飞桨特色模型挑战赛】 How to Trust Unlabeled Data? Instance Credibility Inference for Few-Shot Learning
 
 ## 目录
 
@@ -32,19 +32,19 @@
 在此非常感谢 ICI-FSL repo的Yikai-Wang等人贡献的[ICI-FSL](https://github.com/Yikai-Wang/ICI-FSL/tree/master/V2-TPAMI) ，提高了本repo复现论文的效率。
 
 
-
 ## 2. 数据集和复现精度
-**数据集:** [下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr)
+**数据集:** [下载](https://pan.baidu.com/s/1xRoZORF9cphNcSDXg1YVpA?pwd=b2x1)
 
 miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图片，其中每类有600个样本，每张图片的规格为84 × 84 。通常而言,这个数据集的训练集和测试集的类别划分为：80 : 20。
-**复现精度:**
+**轻量化效果:**
+轻量化的实现方式为减少骨干网络的通道数，从而使模型压缩至9.92M（模型的clasifier在评估测试集时是用不到的，理论上去掉这部分的权重模型还能更小）
 
-|  ICIR | 1shot  | 5shot  |
-|---------|--------|--------|
-| 论文      | 72.25% | 83.25% |
-| 复现      | 72.44% | 83.38% |
-
-权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
+| ICIR | 1shot  | 5shot  | 模型大小 |
+|------|--------|--------|-----|
+| 论文   | 72.25% | 83.25% | -   |
+| 复现   | 72.44% | 83.38% | 30M |
+| 轻量化  | 70.24% | 81.46% | 9.9M |
+权重和日志(ckpt_lite.zip)[下载](https://pan.baidu.com/s/1xRoZORF9cphNcSDXg1YVpA?pwd=b2x1) ，解压到模型目录下
 ## 3. 准备数据与环境
 
 
@@ -84,24 +84,38 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 -
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train
 ```
 ```
-Accuracy: 69.56%, std: :0.50%
-==> Test 5-way Best accuracy 69.56%, achieved at epoch 81
+global step 26980 / 27000, loss: 1.973315, avg_reader_cost: 1.74631 sec, avg_batch_cost: 1.87511 sec, avg_samples: 4.00000, ips: 2.13321 img/sec
+global step 26990 / 27000, loss: 1.791620, avg_reader_cost: 1.75177 sec, avg_batch_cost: 1.88045 sec, avg_samples: 4.00000, ips: 2.12715 img/sec
+global step 27000 / 27000, loss: 1.689789, avg_reader_cost: 1.74432 sec, avg_batch_cost: 1.87190 sec, avg_samples: 4.00000, ips: 2.13687 img/sec
+Accuracy: 67.29%, std: :0.49%
+==> Test 5-way Best accuracy 67.43%, achieved at epoch 88
 ```
 
 
 ### 4.2 模型评估
 评估训练好的模型
 ```bash
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode test --resume ckpt/miniImageNet/5-shot/best_model.tar
-
+# 评估 1 shot
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 1 --phase test --mode test --resume ckpt/miniImageNet/1-shot/best_model.tar
+
+# 评估 5 shot
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode test --resume ckpt/miniImageNet/5-shot/best_model.tar
 ```
 评估结果
 ```
-Load model from ckpt/miniImageNet/5-shot/best_model.tar
-100% 2000/2000 [32:27<00:00,  1.03it/s] 
-81.12 82.73 83.32 83.48 83.48
-0.314 0.317 0.326 0.330 0.330
+Dataset statistics:
+  ------------------------------
+  subset   | # cats | # images
+  ------------------------------
+  train    |    64 |    38400
+  val      |    16 |     9600
+  test     |    20 |    12000
+  ------------------------------
+  total    |   100 |    60000
+  ------------------------------
+100% 2000/2000 [33:24<00:00,  1.00s/it] 
+64.25 69.22 70.05 70.25 70.24
+0.460 0.580 0.611 0.618 0.618
 ```
 
 ### 4.3 模型预测
