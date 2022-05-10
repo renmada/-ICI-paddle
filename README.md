@@ -44,6 +44,7 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 | 论文   | 72.25% | 83.25% | -   |
 | 复现   | 72.44% | 83.38% | 30M |
 | 轻量化  | 70.24% | 81.46% | 9.9M |
+
 权重和日志(ckpt_lite.zip)[下载](https://pan.baidu.com/s/1xRoZORF9cphNcSDXg1YVpA?pwd=b2x1) ，解压到模型目录下
 ## 3. 准备数据与环境
 
