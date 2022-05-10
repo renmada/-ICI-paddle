@@ -139,7 +139,7 @@ python3 export_model.py \
 提取单张图片向量，输入同动态图
 ```bash
 python3 infer.py --model_dir ckpt/miniImageNet/1-shot/
-# The predicted label is: 47, max_prob: 0.3150
+# img embedding extracted, shape is (1, 64)
 ```
 
 
