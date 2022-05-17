@@ -2,6 +2,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from models.resnet12 import resnet12
+from restnext import resnet34
 import time
 
 
@@ -10,8 +11,9 @@ class Model(nn.Layer):
         super(Model, self).__init__()
         self.scale_cls = scale_cls
         self.iter_num_prob = iter_num_prob
-        self.base = resnet12()
-        self.nFeat = self.base.nFeat
+        self.base = resnet34()
+        # self.nFeat = self.base.nFeat
+        self.nFeat = 300
         self.clasifier = nn.Conv2D(self.nFeat, num_classes, kernel_size=1)
 
     def get_embeddings(self, x):
