@@ -39,10 +39,11 @@
 miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图片，其中每类有600个样本，每张图片的规格为84 × 84 。通常而言,这个数据集的训练集和测试集的类别划分为：80 : 20。
 **复现精度:**
 
-|  ICIR | 1shot  | 5shot  |
-|---------|--------|--------|
-| 论文      | 72.25% | 83.25% |
-| 复现      | 72.44% | 83.38% |
+| ICIR | 1shot  | 5shot  |
+|------|--------|--------|
+| 论文   | 72.25% | 83.25% |
+| 复现   | 72.44% | 83.38% |
+| 量化   | 72.45% | 83.43% |
 
 权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
 ## 3. 准备数据与环境
@@ -59,6 +60,8 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 
 ```bash
 python -m pip install paddlepaddle-gpu==0.0.0.post102 -f https://www.paddlepaddle.org.cn/whl/linux/gpu/develop.html
+pip install paddleslim
+pip install paddlelight
 pip install glmnet-py
 ## 安装AutoLog（规范化日志输出工具）
 pip install git+https://github.com/LDOUBLEV/AutoLog
@@ -76,40 +79,43 @@ pip install git+https://github.com/LDOUBLEV/AutoLog
 ## 4. 开始使用
 
 ### 4.1 模型训练
-#### 复现论文精度
+#### 4.1.1 fp32训练
 ```bash
-# train 1 shot
+# 训练 1 shot
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train
-# train 5 shot
+# 训练 5 shot
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train
 ```
-```
-Accuracy: 69.56%, std: :0.50%
-==> Test 5-way Best accuracy 69.56%, achieved at epoch 81
-```
 
+#### 4.1.2 量化训练
+```bash
+# 量化训练 1shot 
+python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max_epoch 1 --model_dir 1shot_quat/inference
+# 量化训练 5shot
+python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot- g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume teacher/ckpt/miniImageNet/5-shot/best_model.tar --max_epoch 1 --model_dir 5shot_quat/inference
+```
 
 ### 4.2 模型评估
-评估训练好的模型
+评估量化后的模型
 ```bash
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode test --resume ckpt/miniImageNet/5-shot/best_model.tar
-
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 1 --phase test --mode test --resume ckpt/miniImageNet/1-shot/best_model.tar
+# 评估 1 shot
+python test_by_infer.py --dataset_dir ./data/MiniImagenet --benchmark False --model_dir 1shot_quat --nKnovel 5 --nExemplars 1 --phase test --mode test
+# 评估 5 shot 
+python test_by_infer.py --dataset_dir ./data/MiniImagenet --benchmark False --model_dir 5shot_quat --nKnovel 5 --nExemplars 5 --phase test --mode test
 ```
 评估结果
 ```
-Load model from ckpt/miniImageNet/5-shot/best_model.tar
 100% 2000/2000 [32:27<00:00,  1.03it/s] 
-81.12 82.73 83.32 83.48 83.48
-0.314 0.317 0.326 0.330 0.330
+80.97 82.61 83.29 83.44 83.43
+0.316 0.319 0.327 0.331 0.331
 ```
 
 ### 4.3 模型预测
 提取单张图片向量
 <img src="./images/cat.jpg" width="30%" height="30%" />
 ```bash
-python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test -g 0 --nKnovel 5 --nExemplars 5 --phase test --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
-# img embedding extracted, shape is (1, 64)
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test  --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
+# img embedding extracted, shape is (1, 512)
 ```
 
 
@@ -123,8 +129,8 @@ python3 export_model.py \
 ### 静态图推理
 提取单张图片向量，输入同动态图
 ```bash
-python3 infer.py --model_dir ckpt/miniImageNet/1-shot/
-# The predicted label is: 47, max_prob: 0.3150
+python3 infer.py --model_dir 1shot_quat/
+# img embedding extracted, shape is (1, 512)
 ```
 
 

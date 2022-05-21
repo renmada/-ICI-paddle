@@ -22,9 +22,42 @@ from utils.losses import CrossEntropyLoss
 from utils.optimizers import init_optimizer
 from utils.tools import one_hot
 from paddle.optimizer.lr import PiecewiseDecay
+from paddleslim.dygraph.quant import QAT
+
+quant_config = {
+    # weight preprocess type, default is None and no preprocessing is performed.
+    'weight_preprocess_type': None,
+    # activation preprocess type, default is None and no preprocessing is performed.
+    'activation_preprocess_type': 'PACT',
+    # weight quantize type, default is 'channel_wise_abs_max'
+    'weight_quantize_type': 'channel_wise_abs_max',
+    # activation quantize type, default is 'moving_average_abs_max'
+    'activation_quantize_type': 'moving_average_abs_max',
+    # weight quantize bit num, default is 8
+    'weight_bits': 8,
+    # activation quantize bit num, default is 8
+    'activation_bits': 8,
+    # data type after quantization, such as 'uint8', 'int8', etc. default is 'int8'
+    'dtype': 'int8',
+    # window size for 'range_abs_max' quantization. default is 10000
+    'window_size': 10000,
+    # The decay coefficient of moving average, default is 0.9
+    'moving_rate': 0.9,
+    # for dygraph quantization, layers of type in quantizable_layer_type will be quantized
+    'quantizable_layer_type': ['Conv2D', 'Linear'],
+}
+
+
+def seed_everything(seed):
+    import random
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    paddle.seed(seed)
 
 
 def main(args):
+    seed_everything(args.seed)
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_devices
 
     sys.stdout = Logger(osp.join(args.save_dir, 'log_train.txt'))
@@ -49,12 +82,14 @@ def main(args):
 
     criterion = CrossEntropyLoss()
     lr_schedule = PiecewiseDecay([60, 70, 80, 90], [0.1, 0.006, 0.0012, 0.00024])
-    optimizer = init_optimizer(args.optim, model.parameters(), lr_schedule, args.weight_decay)
+    optimizer = init_optimizer(args.optim, model.parameters(), 0.0001, args.weight_decay)
 
     if args.mode == 'test':
         test(model, testloader, args)
         return
 
+    quanter = QAT(config=quant_config)
+    quanter.quantize(model)
     best_acc = -np.inf
     best_epoch = 0
     print("==> Start training")
@@ -93,20 +128,33 @@ def main(args):
             loss.backward()
             optimizer.step()
             optimizer.clear_grad()
+    model.eval()
+    quanter.save_quantized_model(
+        model,
+        args.model_dir,
+        input_spec=[paddle.static.InputSpec(shape=[None, 3, 84, 84], dtype='float32')],
+    )
+    # acc = val(model, testloader)
+    # is_best = acc > best_acc
+    # lr_schedule.step()
+    # if is_best:
+    #     best_acc = acc
+    #     best_epoch = epoch + 1
+    #     quanter.save_quantized_model(
+    #         model,
+    #         'quat_model',
+    #         input_spec=[paddle.static.InputSpec(shape=[None, 3, 84, 84], dtype='float32')],
+    #         )
 
-        acc = val(model, testloader)
-        is_best = acc > best_acc
-        lr_schedule.step()
-        if is_best:
-            best_acc = acc
-            best_epoch = epoch + 1
+    # state_dict = model.state_dict()
+    # # print(state_dict.keys())
+    # # state_dict.pop('clasifier.weight')
+    # # state_dict.pop('clasifier.bias')
+    # save_checkpoint(state_dict, is_best, osp.join(args.save_dir, 'checkpoint_ep' + str(epoch + 1) + '.tar'))
 
-        state_dict = model.state_dict()
-        save_checkpoint(state_dict, is_best, osp.join(args.save_dir, 'checkpoint_ep' + str(epoch + 1) + '.tar'))
-
-        print("==> Test 5-way Best accuracy {:.2%}, achieved at epoch {}".format(best_acc, best_epoch))
-
-    print("==========\nArgs:{}\n==========".format(args))
+    #     print("==> Test 5-way Best accuracy {:.2%}, achieved at epoch {}".format(best_acc, best_epoch))
+    #
+    # print("==========\nArgs:{}\n==========".format(args))
 
 
 def val(model, testloader):

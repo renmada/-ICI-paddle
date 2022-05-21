@@ -12,9 +12,9 @@ train_model_name:best_model.tar
 train_infer_img_dir:./data/sample_data
 null:null
 ##
-trainer:norm_train
+trainer:norm_train|pact_train
 norm_train:main.py --dataset miniImageNet  -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --dataset_dir ./data/sample_data
-pact_train:null
+pact_train:main_quant.py --dataset miniImageNet  -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --dataset_dir ./data/sample_data --max_epoch 1
 fpgm_train:null
 distill_train:null
 null:null

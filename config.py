@@ -26,7 +26,7 @@ def config():
     parser.add_argument('--weight-decay', default=5e-04, type=float,
                         help="weight decay (default: 5e-04)")
 
-    parser.add_argument('--max-epoch', default=90, type=int,
+    parser.add_argument('--max_epoch', default=90, type=int,
                         help="maximum epochs to run")
     parser.add_argument('--start-epoch', default=0, type=int,
                         help="manual epoch number (useful on restarts)")
