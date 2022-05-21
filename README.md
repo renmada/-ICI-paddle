@@ -90,9 +90,9 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 -
 #### 4.1.2 量化训练
 ```bash
 # 量化训练 1shot 
-python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max_epoch 1 --model_dir 1shot_quat/inference
+python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max-epoch 1 --model_dir 1shot_quat/inference
 # 量化训练 5shot
-python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot- g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume teacher/ckpt/miniImageNet/5-shot/best_model.tar --max_epoch 1 --model_dir 5shot_quat/inference
+python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot- g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume teacher/ckpt/miniImageNet/5-shot/best_model.tar --max-epoch 1 --model_dir 5shot_quat/inference
 ```
 
 ### 4.2 模型评估
