@@ -10,8 +10,11 @@
     - [3.3 准备模型]()
 - [4. 开始使用]()
     - [4.1 模型训练]()
+      - [4.1.1 fp32训练]()
+      - [4.1.1 量化训练]()
     - [4.2 模型评估]()
     - [4.3 模型预测]()
+    - [4.4 paddlelite转换]()
 - [5. 模型推理部署]()
 - [6. 自动化测试脚本]()
 - [7. LICENSE]()
@@ -38,14 +41,15 @@
 
 miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图片，其中每类有600个样本，每张图片的规格为84 × 84 。通常而言,这个数据集的训练集和测试集的类别划分为：80 : 20。
 **复现精度:**
+本次轻量化的实现方式为使用[paddleslim](https://github.com/PaddlePaddle/PaddleSlim) 量化训练
 
-| ICIR | 1shot  | 5shot  |
-|------|--------|--------|
-| 论文   | 72.25% | 83.25% |
-| 复现   | 72.44% | 83.38% |
-| 量化   | 72.45% | 83.43% |
+| ICIR | 1shot  | 5shot  | 模型尺寸 |
+|------|--------|--------|------|
+| 论文   | 72.25% | 83.25% | -    |
+| 复现   | 72.44% | 83.38% | -    |
+| 量化   | 72.45% | 83.43% | 7.7M |
 
-权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
+复现权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
 ## 3. 准备数据与环境
 
 
@@ -55,12 +59,11 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 
 - 硬件：GPU: Tesla V100 Mem 16GB, CPU 2cores RAM 16GB (aistudio高级GPU)
 - 框架：
-  - paddlepaddle-gpu==0.0.0.post102
+  - paddlepaddle-gpu===2.3.0.post101
 - 使用如下命令安装依赖：
 
 ```bash
-python -m pip install paddlepaddle-gpu==0.0.0.post102 -f https://www.paddlepaddle.org.cn/whl/linux/gpu/develop.html
-pip install paddleslim
+python -m pip install paddlepaddle-gpu==2.3.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.htmlpip install paddleslim
 pip install paddlelight
 pip install glmnet-py
 ## 安装AutoLog（规范化日志输出工具）
@@ -88,6 +91,7 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 -
 ```
 
 #### 4.1.2 量化训练
+fp32模型没有重新训练，沿用了之前的模型。开始前把**ckpt.zip解压到当前目录下**
 ```bash
 # 量化训练 1shot 
 python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max-epoch 1 --model_dir 1shot_quat/inference
@@ -112,12 +116,21 @@ python test_by_infer.py --dataset_dir ./data/MiniImagenet --benchmark False --mo
 
 ### 4.3 模型预测
 提取单张图片向量
-<img src="./images/cat.jpg" width="30%" height="30%" />
+<img src="./images/cat.jpg" width="10%" height="1%" />
 ```bash
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test  --mode predict --resume ckpt/miniImageNet/1-shot/best_model.tar
 # img embedding extracted, shape is (1, 512)
 ```
-
+### 4.4 paddlelite转换
+把int8量化模型转成lite格式，查看模型实际大小
+```bash
+paddle_lite_opt \
+    --model_file="1shot_quat/inference.pdmodel"  \
+    --param_file="1shot_quat/inference.pdiparams" \
+    --optimize_out=./1shot \
+    --quant_model=true \
+    --quant_type=QUANT_INT8
+```
 
 ## 5. 模型推理部署
 ###  模型导出
@@ -151,4 +164,5 @@ bash test_tipc/test_train_inference_python.sh test_tipc/configs/train_infer_pyth
 [1] [How to Trust Unlabeled Data? Instance Credibility Inference for Few-Shot Learning](https://arxiv.org/pdf/2007.08461.pdf)
 
 [2] [ICI-FSL](https://github.com/Yikai-Wang/ICI-FSL/tree/master/V2-TPAMI)
+
 
