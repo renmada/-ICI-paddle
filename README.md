@@ -37,7 +37,7 @@
 
 
 ## 2. 数据集和复现精度
-**数据集:** [下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr)
+**数据集:** [下载](https://pan.baidu.com/s/1FPeqtzYBYHPu8ZhXpwKu_A?pwd=utv6)
 
 miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图片，其中每类有600个样本，每张图片的规格为84 × 84 。通常而言,这个数据集的训练集和测试集的类别划分为：80 : 20。
 **复现精度:**
@@ -46,10 +46,21 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 | ICIR | 1shot  | 5shot  | 模型尺寸 |
 |------|--------|--------|------|
 | 论文   | 72.25% | 83.25% | -    |
-| 复现   | 72.44% | 83.38% | -    |
+| 复现   | 72.44% | 83.38% | 31M  |
 | 量化   | 72.45% | 83.43% | 7.7M |
 
-复现权重和日志[下载](https://pan.baidu.com/s/1_JVEk1fv1B3qvYXMeZ59TA?pwd=73pr) ，解压到模型目录下
+### 模型下载
+#### 下载地址
+[百度网盘](https://pan.baidu.com/s/1FPeqtzYBYHPu8ZhXpwKu_A?pwd=utv6)
+#### 文件说明
+- ckpt.zip：包含动态图训练的模型，方便复现量化训练  
+- 1shot.zip和5shot.zip包含以下文件：  
+├── best_model.tar # 动态图训练的模型  
+├── inference.pdiparams # 量化后导出的静态模型  
+├── inference.pdmodel # 量化后导出的静态模型  
+├── lite.nb # paddlelite导出的实际大小的静态模型  
+
+
 ## 3. 准备数据与环境
 
 
@@ -64,10 +75,11 @@ miniImageNet数据集节选自ImageNet数据集,包含100类共60000张彩色图
 
 ```bash
 python -m pip install paddlepaddle-gpu==2.3.0.post101 -f https://www.paddlepaddle.org.cn/whl/linux/mkl/avx/stable.htmlpip install paddleslim
-pip install paddlelight
+pip install paddleslim
+pip install paddlelite
 pip install glmnet-py
 ## 安装AutoLog（规范化日志输出工具）
-pip install git+https://github.com/LDOUBLEV/AutoLog
+pip install  https://paddleocr.bj.bcebos.com/libs/auto_log-1.2.0-py3-none-any.whl
 ```
 
 ### 3.2 准备数据
@@ -84,9 +96,9 @@ pip install git+https://github.com/LDOUBLEV/AutoLog
 ### 4.1 模型训练
 #### 4.1.1 fp32训练
 ```bash
-# 训练 1 shot
+# 训练 1shot
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train
-# 训练 5 shot
+# 训练 5shot
 python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train
 ```
 
@@ -96,15 +108,15 @@ fp32模型没有重新训练，沿用了之前的模型。开始前把**ckpt.zip
 # 量化训练 1shot 
 python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max-epoch 1 --model_dir 1shot_quat/inference
 # 量化训练 5shot
-python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot- g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume teacher/ckpt/miniImageNet/5-shot/best_model.tar --max-epoch 1 --model_dir 5shot_quat/inference
+python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume ckpt/miniImageNet/5-shot/best_model.tar --max-epoch 1 --model_dir 5shot_quat/inference
 ```
 
 ### 4.2 模型评估
 评估量化后的模型
 ```bash
-# 评估 1 shot
+# 评估 1shot
 python test_by_infer.py --dataset_dir ./data/MiniImagenet --benchmark False --model_dir 1shot_quat --nKnovel 5 --nExemplars 1 --phase test --mode test
-# 评估 5 shot 
+# 评估 5shot 
 python test_by_infer.py --dataset_dir ./data/MiniImagenet --benchmark False --model_dir 5shot_quat --nKnovel 5 --nExemplars 5 --phase test --mode test
 ```
 评估结果
@@ -127,7 +139,7 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test  --mode 
 paddle_lite_opt \
     --model_file="1shot_quat/inference.pdmodel"  \
     --param_file="1shot_quat/inference.pdiparams" \
-    --optimize_out=./1shot \
+    --optimize_out=./1shot/lite \
     --quant_model=true \
     --quant_type=QUANT_INT8
 ```
