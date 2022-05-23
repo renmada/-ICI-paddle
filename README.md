@@ -139,7 +139,7 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/test  --mode 
 paddle_lite_opt \
     --model_file="1shot_quat/inference.pdmodel"  \
     --param_file="1shot_quat/inference.pdiparams" \
-    --optimize_out=./1shot/lite \
+    --optimize_out=lite \
     --quant_model=true \
     --quant_type=QUANT_INT8
 ```
