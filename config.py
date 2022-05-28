@@ -90,6 +90,7 @@ def config():
     parser.add_argument('--seed', type=int, default=1)
     parser.add_argument('--mode', type=str, default='train')
     parser.add_argument('--pic_path', type=str, default='./images/cat.jpg')
+    parser.add_argument('--quant_train', action='store_true')
 
     args = parser.parse_args()
 

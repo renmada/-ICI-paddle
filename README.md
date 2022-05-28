@@ -106,9 +106,9 @@ python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 -
 fp32模型没有重新训练，沿用了之前的模型。开始前把**ckpt.zip解压到当前目录下**
 ```bash
 # 量化训练 1shot 
-python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max-epoch 1 --model_dir 1shot_quat/inference
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/1-shot -g 0 --nKnovel 5 --nExemplars 1 --phase val --mode train --resume ckpt/miniImageNet/1-shot/best_model.tar --max-epoch 1 --model_dir 1shot_quat/inference --quant_train
 # 量化训练 5shot
-python main_quant.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume ckpt/miniImageNet/5-shot/best_model.tar --max-epoch 1 --model_dir 5shot_quat/inference
+python main.py --dataset miniImageNet --save-dir ckpt/miniImageNet/5-shot -g 0 --nKnovel 5 --nExemplars 5 --phase val --mode train --resume ckpt/miniImageNet/5-shot/best_model.tar --max-epoch 1 --model_dir 5shot_quat/inference --quant_train
 ```
 
 ### 4.2 模型评估

@@ -22,7 +22,30 @@ from utils.losses import CrossEntropyLoss
 from utils.optimizers import init_optimizer
 from utils.tools import one_hot
 from paddle.optimizer.lr import PiecewiseDecay
+from paddleslim.dygraph.quant import QAT
 
+quant_config = {
+    # weight preprocess type, default is None and no preprocessing is performed.
+    'weight_preprocess_type': None,
+    # activation preprocess type, default is None and no preprocessing is performed.
+    'activation_preprocess_type': 'PACT',
+    # weight quantize type, default is 'channel_wise_abs_max'
+    'weight_quantize_type': 'channel_wise_abs_max',
+    # activation quantize type, default is 'moving_average_abs_max'
+    'activation_quantize_type': 'moving_average_abs_max',
+    # weight quantize bit num, default is 8
+    'weight_bits': 8,
+    # activation quantize bit num, default is 8
+    'activation_bits': 8,
+    # data type after quantization, such as 'uint8', 'int8', etc. default is 'int8'
+    'dtype': 'int8',
+    # window size for 'range_abs_max' quantization. default is 10000
+    'window_size': 10000,
+    # The decay coefficient of moving average, default is 0.9
+    'moving_rate': 0.9,
+    # for dygraph quantization, layers of type in quantizable_layer_type will be quantized
+    'quantizable_layer_type': ['Conv2D', 'Linear'],
+}
 
 def main(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_devices
@@ -48,7 +71,14 @@ def main(args):
     trainloader, testloader = dm.return_dataloaders()
 
     criterion = CrossEntropyLoss()
-    lr_schedule = PiecewiseDecay([60, 70, 80, 90], [0.1, 0.006, 0.0012, 0.00024])
+    if args.quant_train:
+        print('using quantization, total epoch {}'.format(args.max_epoch))
+        lr_schedule = 0.0001
+        quanter = QAT(config=quant_config)
+        quanter.quantize(model)
+    else:
+        print('fp32 training, total epoch {}'.format(args.max_epoch))
+        lr_schedule = PiecewiseDecay([60, 70, 80, 90], [0.1, 0.006, 0.0012, 0.00024])
     optimizer = init_optimizer(args.optim, model.parameters(), lr_schedule, args.weight_decay)
 
     if args.mode == 'test':
@@ -93,7 +123,14 @@ def main(args):
             loss.backward()
             optimizer.step()
             optimizer.clear_grad()
-
+        if args.quant_train:
+            model.eval()
+            quanter.save_quantized_model(
+                model,
+                args.model_dir,
+                input_spec=[paddle.static.InputSpec(shape=[None, 3, 84, 84], dtype='float32')],
+            )
+            return
         acc = val(model, testloader)
         is_best = acc > best_acc
         lr_schedule.step()
